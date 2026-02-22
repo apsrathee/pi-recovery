@@ -26,7 +26,7 @@ bash restore.sh
 
 5\. Configure rclone (gcrypt remote)
 
-6\. Enter encryption password (root1234)
+6\. Enter encryption password
 
 7\. Wait for restore to complete
 
