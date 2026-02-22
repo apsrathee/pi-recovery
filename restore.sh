@@ -32,6 +32,7 @@ sudo systemctl daemon-reload
 
 sudo systemctl enable pialertsbot.service 2>/dev/null
 sudo systemctl enable pialerts-auto-update.timer 2>/dev/null
+sudo systemctl enable pi-dashboard.service 2>/dev/null
 
 echo "🌐 Installing Tailscale..."
 curl -fsSL https://tailscale.com/install.sh | sh
