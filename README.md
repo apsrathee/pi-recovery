@@ -16,7 +16,7 @@
 
 
 
-curl -O https://raw.githubusercontent.com/YOUR\_USERNAME/pi-recovery/main/restore.sh
+curl -O https://raw.githubusercontent.com/apsrathee/pi-recovery/main/restore.sh
 
 chmod +x restore.sh
 
