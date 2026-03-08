@@ -62,6 +62,7 @@ These require manual verification after the script completes:
 - **qBittorrent** — confirm download path points to `/home/piadmin/media/downloads`
 - **Plex** — re-scan libraries if media was added since last backup
 - **Telegram bots** — send a test message to confirm tokens are working
+- **Uptime Kuma** — Re-add docker conatiner ports and telegram bot token 
 
 ---
 
