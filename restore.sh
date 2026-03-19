@@ -46,11 +46,21 @@ read -rp "  Type YES to continue: " CONFIRM
 [[ "$CONFIRM" == "YES" ]] || { echo "Aborted."; exit 1; }
 
 # ================================================================
+# STEP 0 — Ensure sudo is available (minimal Debian may not have it)
+# ================================================================
+if ! command -v sudo &>/dev/null; then
+    echo -e "${YELLOW}  sudo not found — installing as root...${RESET}"
+    su -c "apt-get install -y sudo && usermod -aG sudo ${PI_USER}" root \
+        || die "Failed to install sudo. Re-run this script after: su -c 'apt install sudo && usermod -aG sudo ${PI_USER}' root"
+    die "sudo installed. Please LOG OUT and LOG BACK IN as ${PI_USER}, then re-run restore.sh."
+fi
+
+# ================================================================
 # STEP 1 — Base packages
 # ================================================================
 info "STEP 1/9 — Installing base packages..."
-sudo apt update -qq
-sudo apt install -y curl rclone git
+sudo apt-get update -qq
+sudo apt-get install -y curl rclone git
 ok "Base packages installed."
 
 # ================================================================
@@ -70,12 +80,13 @@ sudo usermod -aG docker "$PI_USER" 2>/dev/null || true
 sudo systemctl enable docker
 sudo systemctl start docker
 
-# Install Compose v2 plugin for aarch64 (Pi 4)
+# Install Compose v2 plugin — detect arch dynamically
 COMPOSE_DIR="/usr/local/lib/docker/cli-plugins"
 sudo mkdir -p "$COMPOSE_DIR"
 if ! sudo docker compose version &>/dev/null 2>&1; then
-    info "Downloading Docker Compose v2 plugin (aarch64)..."
-    COMPOSE_URL="https://github.com/docker/compose/releases/latest/download/docker-compose-linux-aarch64"
+    info "Downloading Docker Compose v2 plugin..."
+    ARCH=$(uname -m)
+    COMPOSE_URL="https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH}"
     sudo curl -fsSL "$COMPOSE_URL" -o "${COMPOSE_DIR}/docker-compose"
     sudo chmod +x "${COMPOSE_DIR}/docker-compose"
 fi
@@ -90,9 +101,37 @@ ok "Docker cmd set to: ${DOCKER}"
 # ================================================================
 info "STEP 3/9 — Configuring rclone (gcrypt remote)..."
 echo ""
-echo -e "${YELLOW}  ⚠️  The remote MUST be named exactly: gcrypt${RESET}"
-echo -e "${YELLOW}     It should point to your Google Drive gcrypt path.${RESET}"
+echo -e "${YELLOW}  ⚠️  Follow these steps EXACTLY in rclone config:${RESET}"
 echo ""
+echo -e "  ${BOLD}Remote 1 — Google Drive base remote:${RESET}"
+echo    "    n → New remote"
+echo    "    Name: gdrive"
+echo    "    Type: drive  (Google Drive)"
+echo    "    client_id: (blank, Enter)"
+echo    "    client_secret: (blank, Enter)"
+echo    "    scope: 1  (full drive access)"
+echo    "    service_account_file: (blank, Enter)"
+echo    "    advanced config: n"
+echo    "    auto config: n  → open the URL in your browser to authenticate"
+echo    "    team drive: n"
+echo    "    y → confirm"
+echo ""
+echo -e "  ${BOLD}Remote 2 — Encrypted crypt layer:${RESET}"
+echo    "    n → New remote"
+echo    "    Name: gcrypt"
+echo    "    Type: crypt"
+echo    "    Remote: gdrive:pi-backups"
+echo    "    filename encryption: 1  (standard)"
+echo    "    directory name encryption: 1  (true)"
+echo    "    Password: (your encryption password)"
+echo    "    Password2/salt: (your salt if set, else blank)"
+echo    "    advanced config: n"
+echo    "    y → confirm"
+echo ""
+echo -e "  ${BOLD}Then press q to quit rclone config and continue.${RESET}"
+echo ""
+read -rp "  Press Enter when ready to open rclone config..."
+
 rclone config
 
 # Verify remote exists before proceeding
@@ -226,11 +265,15 @@ else
 fi
 
 # --- Systemd services ---
-# Known services in your stack
+# All known services in your stack
 declare -a SERVICES=(
     "pialertsbot.service"
+    "pialerts-auto-update.service"
     "pialerts-auto-update.timer"
+    "pialertsbot.timer"
     "pi-dashboard.service"
+    "mc-command-center.service"
+    "mc-bot.service"
 )
 
 echo ""
@@ -330,7 +373,6 @@ echo ""
 info "Spot-checking key service ports..."
 echo ""
 
-# Format: "Name Port Protocol"
 declare -A PORTS=(
     ["Plex"]="32400"
     ["qBittorrent"]="8080"
@@ -339,10 +381,10 @@ declare -A PORTS=(
     ["Prowlarr"]="9696"
     ["Jackett"]="9117"
     ["FlareSolverr"]="8191"
-    ["Grafana"]="3001"        # host 3001 → container 3000
+    ["Grafana"]="3001"
     ["Prometheus"]="9090"
-    ["cAdvisor"]="8081"       # host 8081 → container 8080
-    ["Node Exporter"]="9100"  # network_mode: host, exposes directly
+    ["cAdvisor"]="8081"
+    ["Node Exporter"]="9100"
     ["Portainer"]="9000"
     ["Uptime Kuma"]="3100"
     ["Omni-Tools"]="8082"
