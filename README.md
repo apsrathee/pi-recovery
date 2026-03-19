@@ -1,5 +1,4 @@
 # 🛠️ Pi Infrastructure Recovery
-
 > **One-command disaster recovery for a full Raspberry Pi 4B homelab stack.**  
 > Restores Docker services, system config, HDD mount, Tailscale, crontab, and systemd services automatically from an encrypted Google Drive backup.
 
@@ -12,6 +11,7 @@
 | **Media** | Plex, Radarr, Sonarr, qBittorrent, Jackett, Prowlarr, FlareSolverr, Tautulli |
 | **Monitoring** | Grafana, Prometheus, cAdvisor, Node Exporter, Uptime Kuma |
 | **Automation** | Media Request Bot (Telegram), PiAlertsBot, Pi Command Center |
+| **Minecraft** | MC Command Center (Flask API), MC Telegram Bot |
 | **Infrastructure** | Nginx Proxy Manager, Portainer, Omni-Tools, Tailscale, AdGuard Home |
 
 ---
@@ -24,7 +24,6 @@
 - SSH access available
 
 ### Recovery
-
 ```bash
 # 1. Download the restore script
 curl -O https://raw.githubusercontent.com/apsrathee/pi-recovery/main/restore.sh
@@ -38,16 +37,17 @@ bash restore.sh
 
 The script will guide you interactively through:
 
-1. Installing Docker (Compose v2), rclone, curl, git
-2. Configuring the **rclone gcrypt remote** (Google Drive encrypted backup)
-3. Restoring `/home/piadmin` from the encrypted backup
-4. Auto-detecting and mounting the **4TB external HDD**
-5. Applying system config (IPv6 fix, hostname, gai.conf)
-6. Restoring **crontab** and **systemd services**
-7. Connecting **Tailscale** (interactive auth required)
-8. Pulling and starting the full **Docker stack**
-9. Running a **port health check** across all 18 services
-10. Sending a **Telegram notification** with restore summary
+1. **sudo check** — installs sudo automatically if missing (handles minimal Debian/Raspberry Pi OS)
+2. Installing **Docker** (Compose v2), rclone, curl, git
+3. Configuring the **rclone gcrypt remote** (Google Drive encrypted backup) — with step-by-step instructions printed on screen
+4. Restoring `/home/piadmin` from the encrypted backup
+5. Auto-detecting and mounting the **4TB external HDD**
+6. Applying system config (IPv6 fix, hostname, gai.conf)
+7. Restoring **crontab** and **systemd services**
+8. Connecting **Tailscale** (interactive auth required)
+9. Pulling and starting the full **Docker stack**
+10. Running a **port health check** across all 18 services
+11. Sending a **Telegram notification** with restore summary
 
 ---
 
@@ -62,7 +62,7 @@ These require manual verification after the script completes:
 - **qBittorrent** — confirm download path points to `/home/piadmin/media/downloads`
 - **Plex** — re-scan libraries if media was added since last backup
 - **Telegram bots** — send a test message to confirm tokens are working
-- **Uptime Kuma** — Re-add docker conatiner ports and telegram bot token 
+- **Uptime Kuma** — re-add Docker container ports and Telegram bot token
 
 ---
 
@@ -70,7 +70,7 @@ These require manual verification after the script completes:
 
 ```
 pi-recovery/
-└── restore.sh       # Full automated recovery script
+├── restore.sh       # Full automated recovery script
 └── README.md        # This file
 ```
 
@@ -116,3 +116,33 @@ pi-recovery/
 | Tautulli | `8181` |
 | NPM Admin | `81` |
 | NPM Proxy | `80` / `443` |
+| MC Command Center | `5050` |
+
+---
+
+## 🎮 Minecraft Reference
+
+| Property | Value |
+|---|---|
+| **MC Command Center** | Flask API → `port 5050`, web dashboard at `mcserver.home` |
+| **MC Telegram Bot** | service `mc-bot`, file `mcbot.py` |
+| **great-server** | PaperMC, RCON port `25575` |
+| **gooners-server** | RCON port `25576` |
+| **Bluemap (great)** | `port 8200` → `greatbluemap.home` |
+| **Bluemap (gooners)** | `port 8100` → `bluemap.home` |
+
+---
+
+## 🔧 Systemd Services Restored
+
+The following service files are backed up in `/home/piadmin/.pialerts/` and automatically reinstalled by the script:
+
+| Service | Description |
+|---|---|
+| `pi-dashboard.service` | Pi Home Dashboard (port 9096) |
+| `pialertsbot.service` | PiAlerts Telegram bot |
+| `pialerts-auto-update.service` | PiAlerts auto-update |
+| `pialerts-auto-update.timer` | PiAlerts update timer |
+| `pialertsbot.timer` | PiAlerts bot timer |
+| `mc-command-center.service` | MC Command Center Flask API |
+| `mc-bot.service` | MC Telegram bot |
