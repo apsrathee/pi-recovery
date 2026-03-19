@@ -127,7 +127,7 @@ pi-recovery/
 | **MC Command Center** | Flask API → `port 5050`, web dashboard at `mcserver.home` |
 | **MC Telegram Bot** | service `mc-bot`, file `mcbot.py` |
 | **great-server** | PaperMC, RCON port `25575` |
-| **gooners-server** | RCON port `25576` |
+| **gooners-server** | Fabric, RCON port `25576` |
 | **Bluemap (great)** | `port 8200` → `greatbluemap.home` |
 | **Bluemap (gooners)** | `port 8100` → `bluemap.home` |
 
